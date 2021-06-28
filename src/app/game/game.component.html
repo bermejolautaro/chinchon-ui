@@ -1,0 +1,105 @@
+<div *ngIf="player" fxLayoutAlign="center center" fxLayoutGap="30px"
+  style="color: white; font-size: 36px; font-family: 'Calibri'; padding: 1em 0">
+  <div>Player {{ player.id}}</div>
+  <div>Points: {{ player.points}}</div>
+</div>
+
+<div fxLayoutAlign="center center" fxLayout="column" style="min-height: 90vh; width: 100%">
+  <div cdkDropListGroup style="width: 90%" fxLayoutAlign="center center" fxLayout="column">
+    <div
+      *ngIf="player"
+      fxLayoutAlign="center center"
+      fxLayout="row"
+      fxLayoutGap="15px"
+      style="min-height: 250px; width: 100%; background-color: #004d2b"
+      cdkDropList
+      [cdkDropListData]="player.cards"
+      cdkDropListOrientation="horizontal"
+      (cdkDropListDropped)="drop($any($event))">
+      <app-card
+        *ngFor="let card of player.cards; let i = index"
+        [ngStyle]="{
+          cursor: 'pointer',
+          border: !!selectedCard && card.rank === selectedCard.rank && card.suit === selectedCard.suit ? 'solid red 6px': 'solid transparent 6px'
+        }"
+        [suit]="card.suit"
+        [rank]="card.rank"
+        (click)="onClickCard(i)"
+        cdkDrag>
+      </app-card>
+    </div>
+
+    <div fxLayoutAlign="center center" style="width: 100%; margin: 1.5em 0" fxLayoutGap="15px">
+
+      <div
+        fxLayoutAlign="center center"
+        fxLayout="row"
+        fxLayoutGap="15px"
+        cdkDropList
+        [cdkDropListData]="firstGroup"
+        cdkDropListOrientation="horizontal"
+        style="background-color: #004d2b; width: 50%; height: 250px; border-radius: 5px; margin: 1.5em 0"
+        (cdkDropListDropped)="drop($any($event))">
+        <div *ngIf="firstGroup.length === 0" style="font-size: 48px; font-family: 'Calibri'; color: #000">Group 1</div>
+        <app-card
+          *ngFor="let card of firstGroup; let i = index"
+          [ngStyle]="{
+          cursor: 'pointer',
+          border: !!selectedCard && card.rank === selectedCard.rank && card.suit === selectedCard.suit ? 'solid red 6px': 'solid transparent 6px'
+        }"
+          [suit]="card.suit"
+          [rank]="card.rank"
+          (click)="onClickCard(i)"
+          cdkDrag>
+        </app-card>
+      </div>
+
+      <div
+        fxLayoutAlign="center center"
+        fxLayout="row"
+        fxLayoutGap="15px"
+        cdkDropList
+        [cdkDropListData]="secondGroup"
+        cdkDropListOrientation="horizontal"
+        style="background-color: hsl(154, 100%, 15%); width: 50%; height: 250px; border-radius: 5px; margin: 1.5em 0"
+        (cdkDropListDropped)="drop($any($event))">
+        <div *ngIf="secondGroup.length === 0" style="font-size: 48px; font-family: 'Calibri'; color: #000">Group 2</div>
+        <app-card
+          *ngFor="let card of secondGroup; let i = index"
+          [ngStyle]="{
+        cursor: 'pointer',
+        border: !!selectedCard && card.rank === selectedCard.rank && card.suit === selectedCard.suit ? 'solid red 6px': 'solid transparent 6px'
+      }"
+          [suit]="card.suit"
+          [rank]="card.rank"
+          (click)="onClickCard(i)"
+          cdkDrag>
+        </app-card>
+      </div>
+    </div>
+
+  </div>
+
+  <div fxLayoutAlign="center center" fxLayoutGap="15px" style="padding: 5em 0 0 0">
+    <button type="button" class="button button-fat" [disabled]="!player?.isPlayerTurn" (click)="pickCardFromDeck()">Pick
+      Card From Deck</button>
+    <button type="button" class="button button-fat" [disabled]="!player?.isPlayerTurn" (click)="pickCardFromPile()">Pick
+      Card From Pile</button>
+    <button type="button" class="button button-fat" [disabled]="!player?.isPlayerTurn" (click)="discardCard()">Discard
+      Card</button>
+    <button type="button" class="button button-fat" [disabled]="!player?.isPlayerTurn" (click)="cut()">Cut</button>
+  </div>
+
+
+  <div *ngIf="player && player.topCardInPile" fxLayoutAlign="center center" style="margin: 1em 0">
+    <app-card [suit]="player.topCardInPile.suit" [rank]="player.topCardInPile.rank"></app-card>
+  </div>
+
+  <div *ngIf="shareLink" style="margin-top: 100px">
+    <input type="text" [value]="shareLink" readonly>
+    <button type="button" class="button button-right" [cdkCopyToClipboard]="shareLink">COPY</button>
+  </div>
+  <div style="font-size: 20px; color: white; padding: 1em; font-family: 'Calibri'; text-align: center;">
+    Share this link with your friends to play!
+  </div>
+</div>
