@@ -10,6 +10,11 @@ import { GameComponent } from './game/game.component';
 import { HomeComponent } from './home/home.component';
 import { CardComponent } from './card/card.component';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+<<<<<<< Updated upstream
+=======
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+>>>>>>> Stashed changes
 
 @NgModule({
   declarations: [
@@ -24,7 +29,13 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
     HttpClientModule,
     FlexModule,
     ClipboardModule,
+<<<<<<< Updated upstream
     DragDropModule
+=======
+    DragDropModule,
+    MatSnackBarModule,
+    BrowserAnimationsModule,
+>>>>>>> Stashed changes
   ],
   providers: [],
   bootstrap: [AppComponent]

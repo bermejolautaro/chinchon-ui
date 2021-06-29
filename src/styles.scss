@@ -2,4 +2,29 @@
 
 body {
   background-color: #006b3c
+<<<<<<< Updated upstream
+=======
+}
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.button {
+  border: none;
+  border-radius: 5px;
+  background-color: #df2935;
+  font-size: 18px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.button-fat {
+  padding: 1em;
+}
+
+.button-fat:disabled {
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+>>>>>>> Stashed changes
 }

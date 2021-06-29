@@ -1,10 +1,17 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectorRef, Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { filter, mergeMap, tap } from 'rxjs/operators';
+import { catchError, filter, mergeMap, tap } from 'rxjs/operators';
 import { CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
-import { interval } from 'rxjs';
+import { interval, of } from 'rxjs';
+import { environment } from 'src/environments/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { HttpErrorResponse } from '@angular/common/http';
+
+interface HttpGenericErrorResponse<T> extends HttpErrorResponse {
+  error: T
+}
 
 interface Card {
   suit: number;
@@ -34,8 +41,8 @@ export class GameComponent implements OnInit {
 
   private gameId: string;
   private playerId: string | null = null;
-  private restEndpoint: string = 'http://localhost:5000/api/rest/chinchon';
-  private rpcEndpoint: string = 'http://localhost:5000/api/rpc/chinchon';
+  private restEndpoint: string = `${environment.apiUrl}/api/rest/chinchon`;
+  private rpcEndpoint: string = `${environment.apiUrl}/api/rpc/chinchon`;
 
 
   public shareLink: string;
@@ -48,7 +55,8 @@ export class GameComponent implements OnInit {
   constructor(
     private http: HttpClient,
     router: Router,
-    route: ActivatedRoute,
+    private route: ActivatedRoute,
+    private snackbar: MatSnackBar,
     @Inject(DOCUMENT) document: Document) {
     this.gameId = route.snapshot.url[1].toString();
     this.playerId = router.getCurrentNavigation()?.extras.state?.playerId;
@@ -67,23 +75,26 @@ export class GameComponent implements OnInit {
         return !!(this.player && !this.player.isPlayerTurn);
       }),
       mergeMap(_ => {
-        return this.http.get<Player>(`${this.restEndpoint}/game/${this.gameId}/players/${this.playerId}`);
+        return this.http.get<Player>(`${this.restEndpoint}/game/${this.gameId}/players/${this.playerId}`).pipe(
+          catchError(_ => of(null))
+        );
       })
     ).subscribe(player => {
-      if (!this.player) {
+      if (!this.player || !player) {
         return;
       }
 
-      this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
+      if(!GameComponent.equals(this.getAllCards(), player.cards)) {
+        this.player.cards = player.cards;
+      }
+
       this.player.topCardInPile = player.topCardInPile;
-      this.player.points = player.points;
-      this.player.id = player.id;
       this.player.isPlayerTurn = player.isPlayerTurn;
     });
   }
 
   private static sortCards(cards: Card[], sortBy: Card[]): Card[] {
-    const result: Card[] = [];
+    const result: Card[] = new Array(8);
     const leftover: Card[] = [];
 
     for (const card of cards) {
@@ -91,14 +102,30 @@ export class GameComponent implements OnInit {
       if (index === -1) {
         leftover.push(card);
       } else {
-        result.splice(index, 0, card);
+        result[index] = card;
       }
     }
 
-    return result.concat(leftover);
+    return result.filter(x => !!x).concat(leftover);
+  }
+
+  private static equals(arr1: Card[], arr2: Card[]): boolean {
+    if (arr1.length !== arr2.length) {
+      return false;
+    }
+
+    for(const card of arr1) {
+      if(!arr2.find(x => x.rank === card.rank && x.suit === card.suit)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   public ngOnInit(): void {
+
+    this.shareLink = `${document.location.host}/${this.route.snapshot.url.join('/')}`;
     if (!this.playerId) {
       this.http.get<string>(`${this.restEndpoint}/game/${this.gameId}/player-key`).pipe(
         tap(playerId => {
@@ -149,35 +176,43 @@ export class GameComponent implements OnInit {
   }
 
   public pickCardFromDeck(): void {
-    this.http.post<Player>(`${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/pick-card-from-deck`, {}).subscribe(player => {
-      if (!this.player || !player) {
-        return;
-      }
+    this.http.post<Player>(`${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/pick-card-from-deck`, {})
+      .subscribe({
+        next: player => {
+          if (!this.player || !player) {
+            return;
+          }
 
-      this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
-      this.player.topCardInPile = player.topCardInPile;
-      this.player.points = player.points;
-      this.player.id = player.id;
-      this.player.isPlayerTurn = player.isPlayerTurn;
-      this.firstGroup = [];
-      this.secondGroup = [];
-    });
+          this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
+          this.player.topCardInPile = player.topCardInPile;
+          this.player.points = player.points;
+          this.player.id = player.id;
+          this.player.isPlayerTurn = player.isPlayerTurn;
+          this.firstGroup = [];
+          this.secondGroup = [];
+        },
+        error: error => this.handleError(error)
+      });
   }
 
   public pickCardFromPile(): void {
-    this.http.post<Player>(`${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/pick-card-from-pile`, {}).subscribe(player => {
-      if (!this.player || !player) {
-        return;
-      }
+    this.http.post<Player>(`${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/pick-card-from-pile`, {})
+      .subscribe({
+        next: player => {
+          if (!this.player || !player) {
+            return;
+          }
 
-      this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
-      this.player.topCardInPile = player.topCardInPile;
-      this.player.points = player.points;
-      this.player.id = player.id;
-      this.player.isPlayerTurn = player.isPlayerTurn;
-      this.firstGroup = [];
-      this.secondGroup = [];
-    });
+          this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
+          this.player.topCardInPile = player.topCardInPile;
+          this.player.points = player.points;
+          this.player.id = player.id;
+          this.player.isPlayerTurn = player.isPlayerTurn;
+          this.firstGroup = [];
+          this.secondGroup = [];
+        },
+        error: error => this.handleError(error)
+      });
   }
 
   public discardCard(): void {
@@ -188,19 +223,22 @@ export class GameComponent implements OnInit {
     this.http.post<Player>(
       `${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/discard-card`,
       this.selectedCard
-    ).subscribe(player => {
-      if (!this.player || !player) {
-        return;
-      }
+    ).subscribe({
+      next: player => {
+        if (!this.player || !player) {
+          return;
+        }
 
-      this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
-      this.player.topCardInPile = player.topCardInPile;
-      this.player.points = player.points;
-      this.player.id = player.id;
-      this.player.isPlayerTurn = player.isPlayerTurn;
-      this.firstGroup = [];
-      this.secondGroup = [];
-      this.selectedCard = null;
+        this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
+        this.player.topCardInPile = player.topCardInPile;
+        this.player.points = player.points;
+        this.player.id = player.id;
+        this.player.isPlayerTurn = player.isPlayerTurn;
+        this.firstGroup = [];
+        this.secondGroup = [];
+        this.selectedCard = null;
+      },
+      error: error => this.handleError(error)
     });
   }
 
@@ -218,19 +256,30 @@ export class GameComponent implements OnInit {
     this.http.post<Player>(
       `${this.rpcEndpoint}/game/${this.gameId}/players/${this.playerId}/cut`,
       cutDto
-    ).subscribe(player => {
-      if (!this.player || !player.cards) {
-        return;
-      }
+    ).subscribe({
+      next: player => {
+        if (!this.player || !player.cards) {
+          return;
+        }
 
 
-      this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
-      this.player.topCardInPile = player.topCardInPile;
-      this.player.points = player.points;
-      this.player.id = player.id;
-      this.player.isPlayerTurn = player.isPlayerTurn;
-      this.firstGroup = [];
-      this.secondGroup = [];
+        this.player.cards = GameComponent.sortCards(player.cards, this.player.cards);
+        this.player.topCardInPile = player.topCardInPile;
+        this.player.points = player.points;
+        this.player.id = player.id;
+        this.player.isPlayerTurn = player.isPlayerTurn;
+        this.firstGroup = [];
+        this.secondGroup = [];
+      },
+      error: error => this.handleError(error)
     });
+  }
+
+  private handleError(httpError: HttpGenericErrorResponse<string>): void {
+    this.snackbar.open(httpError.error, 'Close', { duration: 3000 })
+  }
+
+  private getAllCards(): Card[] {
+    return [...this.player?.cards ?? [], ...this.firstGroup, ...this.secondGroup];
   }
 }

@@ -2,6 +2,10 @@ import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, Inject, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
+<<<<<<< Updated upstream
+=======
+import { environment } from 'src/environments/environment';
+>>>>>>> Stashed changes
 
 interface CreateGameResponse {
   gameGuid: string;
@@ -15,7 +19,11 @@ interface CreateGameResponse {
 })
 export class HomeComponent implements OnInit {
 
+<<<<<<< Updated upstream
   private endpoint: string = 'http://localhost:5000/api/rest/chinchon';
+=======
+  private endpoint: string = `${environment.apiUrl}/api/rest/chinchon`;
+>>>>>>> Stashed changes
   constructor(
     private http: HttpClient,
     private router: Router) { }
