@@ -68,7 +68,8 @@ export class GameComponent implements OnInit {
       }
     }
 
-    this.shareLink = `${document.location.host}/${route.snapshot.url.join('/')}`;
+    this.shareLink = document.location.href;
+    console.log(this.shareLink);
 
     interval(3000).pipe(
       filter(_ => {
